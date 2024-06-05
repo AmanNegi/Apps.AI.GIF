@@ -60,19 +60,25 @@ export class GifStatusUpdateEndpoint extends ApiEndpoint {
             };
         }
 
-        const message = modify.getCreator().startMessage({
-            room,
-            sender,
-            text: "Prompt: " + record.prompt,
-            attachments: [
-                {
-                    title: { value: record.prompt },
-                    imageUrl: content.output,
-                },
-            ],
+        const res = await http.get(content.output, {
+            encoding: null,
         });
 
-        await modify.getCreator().finish(message);
+        if (res && res.content) {
+            const buffer = Buffer.from(res.content);
+            const upload = await modify
+                .getCreator()
+                .getUploadCreator()
+                .uploadBuffer(buffer, {
+                    filename: `${
+                        record.prompt
+                    }${Date.now().toPrecision(8)}.gif`,
+                    room,
+                    user: sender,
+                });
+
+            console.log(upload);
+        }
 
         // delete record from generation persistence
         await onGoingGenPeristence.deleteRecordById(content.id);
